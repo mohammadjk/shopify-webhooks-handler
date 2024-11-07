@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniqueEntity Orders</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #ordersList {
+      list-style-type: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      word-wrap: break-word; /* Ensures content wraps within cell */
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    td {
+      overflow: hidden;
+      text-overflow: ellipsis; /* In case of long text, adds ellipsis */
+    }
+    #lineItemsTable {
+      display: none;
+      margin-top: 20px;
+    }
+    /* Adjust column widths */
+    th:nth-child(1), td:nth-child(1) {
+      width: 30%; /* Order Number column */
+    }
+    th:nth-child(2), td:nth-child(2) {
+      width: 30%; /* Total Price column */
+    }
+    th:nth-child(3), td:nth-child(3) {
+      width: 20%; /* Order Date column */
+    }
+    th:nth-child(4), td:nth-child(4) {
+      width: 20%; /* Status column */
+    }
+    #lineItemsTable th:nth-child(1), #lineItemsTable td:nth-child(1) {
+      width: 40%; /* Product Name column */
+    }
+    #lineItemsTable th:nth-child(2), #lineItemsTable td:nth-child(2) {
+      width: 20%; /* Quantity column */
+    }
+    #lineItemsTable th:nth-child(3), #lineItemsTable td:nth-child(3) {
+      width: 20%; /* Price column */
+    }
+    #lineItemsTable th:nth-child(4), #lineItemsTable td:nth-child(4) {
+      width: 20%; /* SKU column */
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Orders List</h1>
+  <button id="loadOrdersBtn">Load Orders</button>
+  
+  <!-- Orders Table -->
+  <table id="ordersTable">
+    <thead>
+      <tr>
+        <th>Order Number</th>
+        <th>Total Price</th>
+        <th>Order Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="ordersList"></tbody>
+  </table>
+
+  <h2>Order Line Items</h2>
+  <!-- Order Line Items Table -->
+  <table id="lineItemsTable">
+    <thead>
+      <tr>
+        <th>Product Name</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>SKU</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // Fetch and display orders
+    document.getElementById('loadOrdersBtn').addEventListener('click', function() {
+      fetch('http://localhost:3002/orders')
+        .then(response => response.json())
+        .then(data => {
+          const ordersList = document.getElementById('ordersList');
+          ordersList.innerHTML = ''; // Clear existing orders
+          
+          data.forEach(order => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td style="cursor:pointer;">${order.order_number}</td>
+              <td>£${order.total_price}</td>
+              <td>${new Date(order.created_at).toLocaleString()}</td>
+              <td>${order.financial_status}</td>
+            `;
+            row.addEventListener('click', function() {
+              loadOrderLineItems(order.order_id);
+            });
+            ordersList.appendChild(row);
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching data:', error);
+        });
+    });
+
+    // Fetch and display line items of a specific order
+    function loadOrderLineItems(orderId) {
+      fetch(`http://localhost:3002/order-line-items/${orderId}`)
+        .then(response => response.json())
+        .then(data => {
+          const lineItemsTable = document.getElementById('lineItemsTable');
+          const tbody = lineItemsTable.querySelector('tbody');
+          tbody.innerHTML = ''; // Clear previous rows
+          
+          if (data.length > 0) {
+            lineItemsTable.style.display = 'table';
+            data.forEach(item => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${item.product_name}</td>
+                <td>${item.quantity}</td>
+                <td>£${item.price}</td>
+                <td>${item.sku}</td>
+              `;
+              tbody.appendChild(row);
+            });
+          } else {
+            alert('No line items found for this order.');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching line items:', error);
+        });
+    }
+  </script>
+
+</body>
+</html>
